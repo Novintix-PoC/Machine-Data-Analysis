@@ -21,33 +21,70 @@ connect_str = f'DefaultEndpointsProtocol=https;AccountName={account_name};Accoun
 blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 container_client = blob_service_client.get_container_client(container_name)
 
-# Function to load .npy file directly from blob into numpy array
-def load_npy_from_blob(blob_name):
-    blob_client = container_client.get_blob_client(blob_name)
-    blob_data = blob_client.download_blob()
-    npy_bytes = io.BytesIO(blob_data.readall())
-    return np.load(npy_bytes, allow_pickle=True)
+# # Function to load .npy file directly from blob into numpy array
+# def load_npy_from_blob(blob_name):
+#     blob_client = container_client.get_blob_client(blob_name)
+#     blob_data = blob_client.download_blob()
+#     npy_bytes = io.BytesIO(blob_data.readall())
+#     return np.load(npy_bytes, allow_pickle=True)
 
-def load_csv_from_blob(blob_name):
-    blob_client = container_client.get_blob_client(blob_name)
-    blob_data = blob_client.download_blob()
-    return pd.read_csv(io.BytesIO(blob_data.readall()))
+# def load_csv_from_blob(blob_name):
+#     blob_client = container_client.get_blob_client(blob_name)
+#     blob_data = blob_client.download_blob()
+#     return pd.read_csv(io.BytesIO(blob_data.readall()))
 
-# Load .npy files directly into memory from blob
+@st.cache_data(ttl=86400)  # 24 hours if you're okay with a day-long cache
+def load_npy_cached(blob_client, blob_name):
+    stream = BytesIO()
+    blob_client.get_blob_client(container=container_name, blob=blob_name).download_blob().readinto(stream)
+    stream.seek(0)
+    return np.load(stream)
+
+@st.cache_data(ttl=86400)
+def load_csv_cached(blob_client, blob_name):
+    stream = BytesIO()
+    blob_client.get_blob_client(container=container_name, blob=blob_name).download_blob().readinto(stream)
+    stream.seek(0)
+    return pd.read_csv(stream)
+
+
+# # Load .npy files directly into memory from blob
+# start_time = datetime.now()
+# data = load_npy_from_blob('data.npy')
+# duration = datetime.now() - start_time
+# print(f'Data loaded in {duration.seconds // 3600}h {duration.seconds % 3600 // 60}m {duration.seconds % 60}s.')
+# predictions = load_npy_from_blob('predictions.npy')
+
+# state_transition_data = load_npy_from_blob('next_state_steps.npy')
+# # Extract classes
+# classes = data[:, -1].astype(int)
+
+# predicted_steps = state_transition_data[:,1]  # row 1 corresponds to 'predicted_steps'
+# predicted_next_state = state_transition_data[:,0] # row 6 corresponds to 'predicted_next_state'
+
+# mapping_df = load_csv_from_blob('mapping.csv')
+# # Create a dictionary mapping column index to parameter name
+# param_mapping = dict(zip(mapping_df['index'], mapping_df['_NAME']))
+
+# valid_classes = [0, 1, 2, 3]
+# classes = np.array([c if c in valid_classes else 0 for c in classes])
+
+# start_time = datetime.now()
+# data = load_npy_from_blob('data.npy')
 start_time = datetime.now()
-data = load_npy_from_blob('data.npy')
+data = load_npy_cached('data.npy')
 duration = datetime.now() - start_time
 print(f'Data loaded in {duration.seconds // 3600}h {duration.seconds % 3600 // 60}m {duration.seconds % 60}s.')
-predictions = load_npy_from_blob('predictions.npy')
+predictions = load_npy_cached('predictions.npy')
 
-state_transition_data = load_npy_from_blob('next_state_steps.npy')
+state_transition_data = load_npy_cached('next_state_steps.npy')
 # Extract classes
 classes = data[:, -1].astype(int)
 
 predicted_steps = state_transition_data[:,1]  # row 1 corresponds to 'predicted_steps'
 predicted_next_state = state_transition_data[:,0] # row 6 corresponds to 'predicted_next_state'
 
-mapping_df = load_csv_from_blob('mapping.csv')
+mapping_df = load_csv_cached('mapping.csv')
 # Create a dictionary mapping column index to parameter name
 param_mapping = dict(zip(mapping_df['index'], mapping_df['_NAME']))
 
