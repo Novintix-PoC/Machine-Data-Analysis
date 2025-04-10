@@ -7,6 +7,7 @@ import time
 import pandas as pd
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
+from io import BytesIO
 # from dotenv import load_dotenv
 
 st.set_page_config(page_title="Machine Dashboard", layout="wide")
