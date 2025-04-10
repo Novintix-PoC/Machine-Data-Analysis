@@ -7,13 +7,13 @@ import time
 import pandas as pd
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 st.set_page_config(page_title="Machine Dashboard", layout="wide")
 # Load Azure credentials
-load_dotenv()
-account_name = os.environ['ACC_NAME']
-account_key = os.environ['ACC_KEY']
+# load_dotenv()
+account_name = os.getenv['ACC_NAME']
+account_key = os.getenv['ACC_KEY']
 container_name = 'machinedatademo'
 
 # Connect to Azure Blob Storage
