@@ -1,0 +1,5 @@
+numpy==1.26.4
+streamlit==1.33.0
+plotly==5.18.0
+pandas==2.2.1
+azure-storage-blob==12.19.1
