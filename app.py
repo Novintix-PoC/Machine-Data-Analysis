@@ -409,7 +409,7 @@ def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols
 def main():
     apply_custom_styling()
 
-    with st.container(key="title"):
+    with st.container():
         st.title("Machine Dashboard Demo")
 
     # if st.button("Show Dashboard"):
