@@ -34,18 +34,19 @@ container_client = blob_service_client.get_container_client(container_name)
 #     return pd.read_csv(io.BytesIO(blob_data.readall()))
 
 @st.cache_data(ttl=86400)
-def load_npy_cached(blob_client, blob_name):
+def load_npy_cached(_blob_client, blob_name):
     stream = BytesIO()
-    blob_client.get_blob_client(blob_name).download_blob().readinto(stream)
+    _blob_client.get_blob_client(blob_name).download_blob().readinto(stream)
     stream.seek(0)
     return np.load(stream)
 
 @st.cache_data(ttl=86400)
-def load_csv_cached(blob_client, blob_name):
+def load_csv_cached(_blob_client, blob_name):
     stream = BytesIO()
-    blob_client.get_blob_client(blob_name).download_blob().readinto(stream)
+    _blob_client.get_blob_client(blob_name).download_blob().readinto(stream)
     stream.seek(0)
     return pd.read_csv(stream)
+
 
 
 # # Load .npy files directly into memory from blob
