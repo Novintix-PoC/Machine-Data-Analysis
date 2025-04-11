@@ -2,6 +2,7 @@ import os
 import numpy as np
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import time
 import pandas as pd
 from datetime import datetime
@@ -499,11 +500,16 @@ def main():
             # Calculate the average for the current row excluding the last column
             row_avg = np.mean(data[row_idx, :-1])
             avg_values.append(row_avg)
-            fig_time = px.line(
+            fig_time = go.Figure()
+            fig_time.add_trace(go.Scatter(
                 x=list(range(len(avg_values))),
                 y=avg_values,
-                labels={"x": "Time Stamp", "y": "Value"},
-                title="Time Series"
+                mode='lines'
+            ))
+            fig_time.update_layout(
+                title="Time Series",
+                xaxis_title="Time Stamp",
+                yaxis_title="Value"
             )
             st.markdown('<div style="color:#000000;" class="chart-box">', unsafe_allow_html=True)
             st.plotly_chart(fig_time, use_container_width=True)
