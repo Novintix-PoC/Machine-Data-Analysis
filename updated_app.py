@@ -526,7 +526,7 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
         
     # Pause before updating to the next row
-    time.sleep(1)
+    time.sleep(3)
     
     # Hide the title and button
     st.markdown("""
