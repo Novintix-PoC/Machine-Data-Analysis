@@ -94,7 +94,7 @@ def apply_custom_styling():
        
         .dashboard-header .logo {
             font-weight: 900;
-            font-size: 28px;
+            font-size: 30px;
             text-align: center;
         }
        
@@ -129,11 +129,13 @@ def apply_custom_styling():
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 10px;
+            color:#000000;
         }
        
         .status-box .value {
             font-size: 20px;
             font-weight: 700;
+            color:#000000;
         }
        
         /* Probability panels styling */
@@ -204,7 +206,7 @@ def apply_custom_styling():
         }
        
         .parameters-box .title {
-            font-size: 14px;
+            font-size: 20px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 5px;
@@ -215,6 +217,7 @@ def apply_custom_styling():
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
+            color:#000000;
         }
        
         .parameters-box .parameter {
@@ -502,7 +505,7 @@ def main():
                 labels={"x": "Time Stamp", "y": "Value"},
                 title="Time Series"
             )
-            st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+            st.markdown('<div style="color:#000000;" class="chart-box">', unsafe_allow_html=True)
             st.plotly_chart(fig_time, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
