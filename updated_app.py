@@ -308,7 +308,13 @@ def make_scatter_plotly(x_series, y_series, x_label, y_label, title):
     )
     return fig
  
-def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols, next_status, steps_to_next_state,row_idx):
+def seconds_to_hhmmss(seconds):
+    """Convert seconds to hh:mm:ss format."""
+    hours, remainder = divmod(int(seconds), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols, next_status, steps_to_next_state, row_idx, formatted_timestamp):
     """Generate the HTML for the dashboard."""
     # Extract prediction probabilities
     active_prob = f"{pred_probs[0]:.2f}"
@@ -335,8 +341,8 @@ def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols
  
     <div class="status-container">
         <div class="status-box">
-            <div class="label">Time Stamp</div>
-            <div class="value">{row_idx + 1}</div>
+            <div class="label">Current Time</div>
+            <div class="value">{formatted_timestamp}</div>
         </div>
         <div class="status-box">
             <div class="label">Current Machine Status</div>
@@ -348,7 +354,7 @@ def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols
         </div>
         <div class="status-box">
             <div class="label">Next Status Expected In</div>
-            <div class="value">{int(steps_to_next_state)}</div>
+            <div class="value">{seconds_to_hhmmss(steps_to_next_state*0.3)}</div>
         </div>
     </div>
  
@@ -390,130 +396,139 @@ def create_dashboard_html(current_time, machine_status, pred_probs, outlier_cols
     return dashboard_html
 
 def main():
+    st.set_page_config(page_title="Machine Dashboard", layout="wide")
     apply_custom_styling()
-    
-    # Initialize placeholder containers and an empty list for row averages
-    dashboard_container = st.empty()
-    charts_container = st.empty()
-    avg_values = []  # will store the average of each row (excluding the class column)
-    
-    # Set up lower/upper thresholds for outlier detection
-    lower_thresh, upper_thresh = get_thresholds(data, 5, 95)
-    
-    for row_idx in range(n_rows):
-        # Get current time
-        current_time = datetime.now().strftime("%d-%b-%Y %H:%M:%S")
-        
-        # Get actual class and machine status
-        actual_class = int(classes[row_idx])
-        machine_status = label_mapping[actual_class]
-        
-        # Get prediction probabilities
-        pred_probs = predictions[row_idx]
-        
-        # Get outlier columns
-        outlier_cols = get_outlier_columns_for_row(data, row_idx, lower_thresh, upper_thresh)
-        
-        # Get next state and steps
-        next_state = label_mapping.get(predicted_next_state[row_idx], "Unknown State")
-        steps_to_next_state = predicted_steps[row_idx]
-        
-        # Create and display dashboard HTML
-        dashboard_html = create_dashboard_html(
-            current_time=current_time,
-            machine_status=machine_status,
-            pred_probs=pred_probs,
-            outlier_cols=outlier_cols,
-            next_status=next_state,
-            steps_to_next_state=steps_to_next_state,
-            row_idx=row_idx
-        )
-        dashboard_container.markdown(dashboard_html, unsafe_allow_html=True)
-        
-        # Update charts container
-        with charts_container.container():
-            st.markdown('<div class="charts-container">', unsafe_allow_html=True)
-            
-            # Columns for scatter plots
-            col1, col2 = st.columns(2)
-            
-            # Scatter plots for correlation if outliers exist
-            if len(outlier_cols) > 0:
-                primary_col = outlier_cols[0]
-                primary_col_name = param_mapping.get(primary_col, f"Unknown ({primary_col})")
-                top_corr = find_top_correlated_columns(data, row_idx, primary_col)
-                
-                with col1:
-                    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                    if len(top_corr) >= 1:
-                        col1_idx, corr1 = top_corr[0]
-                        col1_name = param_mapping.get(col1_idx, f"Unknown ({col1_idx})")
-                        if not np.isnan(corr1):
+
+    with st.container(key="title"):
+        st.title("Machine Dashboard Demo")
+
+    if st.button("Show Dashboard"):
+        # Initialize placeholder containers and an empty list for row averages
+        dashboard_container = st.empty()
+        charts_container = st.empty()
+        avg_values = []  # will store the average of each row (excluding the class column)
+       
+        # Set up lower/upper thresholds for outlier detection
+        lower_thresh, upper_thresh = get_thresholds(data, 5, 95)
+        base_timestamp = datetime.strptime("2025-02-01 00:00:09", "%Y-%m-%d %H:%M:%S")
+
+        for row_idx in range(n_rows):
+            # Get current time
+            current_time = datetime.now().strftime("%d-%b-%Y %H:%M:%S")
+            current_timestamp = base_timestamp + pd.Timedelta(seconds=row_idx*0.3)
+            formatted_timestamp = current_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+           
+            # Get actual class and machine status
+            actual_class = int(classes[row_idx])
+            machine_status = label_mapping[actual_class]
+           
+            # Get prediction probabilities
+            pred_probs = predictions[row_idx]
+           
+            # Get outlier columns
+            outlier_cols = get_outlier_columns_for_row(data, row_idx, lower_thresh, upper_thresh)
+           
+            # Get next state and steps
+            next_state = label_mapping.get(predicted_next_state[row_idx], "Unknown State")
+            steps_to_next_state = predicted_steps[row_idx]
+           
+            # Create and display dashboard HTML
+            dashboard_html = create_dashboard_html(
+                current_time=current_time,
+                machine_status=machine_status,
+                pred_probs=pred_probs,
+                outlier_cols=outlier_cols,
+                next_status=next_state,
+                steps_to_next_state=steps_to_next_state,
+                row_idx=row_idx,
+                formatted_timestamp=formatted_timestamp  # Add this parameter
+            )
+            dashboard_container.markdown(dashboard_html, unsafe_allow_html=True)
+           
+            # Update charts container
+            with charts_container.container():
+                st.markdown('<div class="charts-container">', unsafe_allow_html=True)
+               
+                # Columns for scatter plots
+                col1, col2 = st.columns(2)
+               
+                # Scatter plots for correlation if outliers exist
+                if len(outlier_cols) > 0:
+                    primary_col = outlier_cols[0]
+                    primary_col_name = param_mapping.get(primary_col, f"Unknown ({primary_col})")
+                    top_corr = find_top_correlated_columns(data, row_idx, primary_col)
+                   
+                    with col1:
+                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+                        if len(top_corr) >= 1:
+                            col1_idx, corr1 = top_corr[0]
+                            col1_name = param_mapping.get(col1_idx, f"Unknown ({col1_idx})")
+                            if not np.isnan(corr1):
+                                start_idx = max(0, row_idx - 50 + 1)
+                                subset = data[start_idx : row_idx + 1, :]
+                                x_main = subset[:, primary_col]
+                                y_1 = subset[:, col1_idx]
+                                fig1 = make_scatter_plotly(
+                                    x_main, y_1,
+                                    x_label=primary_col_name,
+                                    y_label=col1_name,
+                                    title=f"Corr={corr1:.2f}"
+                                )
+                                st.plotly_chart(fig1, use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with col2:
+                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+                        if len(top_corr) >= 2:
+                            col2_idx, corr2 = top_corr[1]
+                            col2_name = param_mapping.get(col2_idx, f"Unknown ({col2_idx})")
                             start_idx = max(0, row_idx - 50 + 1)
                             subset = data[start_idx : row_idx + 1, :]
                             x_main = subset[:, primary_col]
-                            y_1 = subset[:, col1_idx]
-                            fig1 = make_scatter_plotly(
-                                x_main, y_1,
+                            y_2 = subset[:, col2_idx]
+                            fig2 = make_scatter_plotly(
+                                x_main, y_2,
                                 x_label=primary_col_name,
-                                y_label=col1_name,
-                                title=f"Time Stamp: {row_idx}, Corr={corr1:.2f}"
+                                y_label=col2_name,
+                                title=f"Corr={corr2:.2f}"
                             )
-                            st.plotly_chart(fig1, use_container_width=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                    if len(top_corr) >= 2:
-                        col2_idx, corr2 = top_corr[1]
-                        col2_name = param_mapping.get(col2_idx, f"Unknown ({col2_idx})")
-                        start_idx = max(0, row_idx - 50 + 1)
-                        subset = data[start_idx : row_idx + 1, :]
-                        x_main = subset[:, primary_col]
-                        y_2 = subset[:, col2_idx]
-                        fig2 = make_scatter_plotly(
-                            x_main, y_2,
-                            x_label=primary_col_name,
-                            y_label=col2_name,
-                            title=f"Time Stamp: {row_idx}, Corr={corr2:.2f}"
-                        )
-                        st.plotly_chart(fig2, use_container_width=True)
-                    else:
-                        st.markdown('Not enough valid correlations found', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                # No outliers detected case
-                with col1:
-                    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                    st.markdown('No outliers detected in current row', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                with col2:
-                    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
-                    st.markdown('No outliers detected in current row', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # -------------------------------
-            # New: Time Series Plot for Row Averages (Excluding Last Column)
-            # -------------------------------
-            # Calculate the average for the current row excluding the last column
-            row_avg = np.mean(data[row_idx, :-1])
-            avg_values.append(row_avg)
-            fig_time = go.Figure()
-            fig_time.add_trace(go.Scatter(
-                x=list(range(len(avg_values))),
-                y=avg_values,
-                mode='lines'
-            ))
-            fig_time.update_layout(
-                title="Time Series",
-                xaxis_title="Time Stamp",
-                yaxis_title="Value"
-            )
-            st.markdown('<div style="color:#000000;" class="chart-box">', unsafe_allow_html=True)
-            st.plotly_chart(fig_time, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+                            st.plotly_chart(fig2, use_container_width=True)
+                        else:
+                            st.markdown('Not enough valid correlations found', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                else:
+                    # No outliers detected case
+                    with col1:
+                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+                        st.markdown('No outliers detected in current row', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with col2:
+                        st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+                        st.markdown('No outliers detected in current row', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+               
+                st.markdown('</div>', unsafe_allow_html=True)
+               
+                # -------------------------------
+                # New: Time Series Plot for Row Averages (Excluding Last Column)
+                # -------------------------------
+                # Calculate the average for the current row excluding the last column
+                row_avg = np.mean(data[row_idx, :-1])
+                avg_values.append(row_avg)
+                fig_time = go.Figure()
+                fig_time.add_trace(go.Scatter(
+                    x=list(range(len(avg_values))),
+                    y=avg_values,
+                    mode='lines'
+                ))
+                fig_time.update_layout(
+                    title="Time Series",
+                    xaxis_title="Time Stamp",
+                    yaxis_title="Value"
+                )
+                st.markdown('<div style="color:#000000;" class="chart-box">', unsafe_allow_html=True)
+                st.plotly_chart(fig_time, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
             
         # Pause before updating to the next row
         time.sleep(1)
@@ -527,5 +542,4 @@ def main():
 
 if __name__ == "__main__":
     main()
- 
  
