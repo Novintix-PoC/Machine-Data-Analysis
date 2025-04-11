@@ -525,15 +525,15 @@ def main():
             st.plotly_chart(fig_time, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
-    # Pause before updating to the next row
-    time.sleep(3)
-    
-    # Hide the title and button
-    st.markdown("""
-    <style>
-        [data-testid="stHeader"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
+        # Pause before updating to the next row
+        time.sleep(1)
+        
+        # Hide the title and button
+        st.markdown("""
+        <style>
+            [data-testid="stHeader"] {display: none;}
+        </style>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
